@@ -576,13 +576,12 @@ class BotMan
     }
 
     /**
-     * @param int $seconds Number of seconds to wait
+     * @param float $seconds Number of seconds to wait
      * @return $this
      */
-    public function typesAndWaits($seconds)
+    public function typesAndWaits(float $seconds)
     {
-        $this->getDriver()->types($this->message);
-        sleep($seconds);
+        $this->getDriver()->typesAndWaits($this->message, $seconds);
 
         return $this;
     }
