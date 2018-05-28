@@ -158,6 +158,7 @@ class DriverManager
                 return true;
             }
         }
+
         return false;
     }
 

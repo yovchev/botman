@@ -217,7 +217,7 @@ class BotMan
      */
     public function runsOnSocket($running = null)
     {
-        if (is_bool($running)) {
+        if (\is_bool($running)) {
             $this->runsOnSocket = $running;
         }
 
@@ -234,7 +234,8 @@ class BotMan
         }
 
         $user = $this->getDriver()->getUser($this->getMessage());
-        $this->cache->put('user_'.$this->driver->getName().'_'.$user->getId(), $user, $this->config['user_cache_time'] ?? 30);
+        $this->cache->put('user_'.$this->driver->getName().'_'.$user->getId(), $user,
+            $this->config['user_cache_time'] ?? 30);
 
         return $user;
     }
@@ -350,7 +351,7 @@ class BotMan
         $previousGroupAttributes = $this->groupAttributes;
         $this->groupAttributes = array_merge_recursive($previousGroupAttributes, $attributes);
 
-        call_user_func($callback, $this);
+        \call_user_func($callback, $this);
 
         $this->groupAttributes = $previousGroupAttributes;
     }
@@ -375,7 +376,7 @@ class BotMan
                     $this->message = $messages[0];
                 }
 
-                call_user_func_array($event['callback'], [$driverEvent->getPayload(), $this]);
+                \call_user_func_array($event['callback'], [$driverEvent->getPayload(), $this]);
             });
         }
     }
@@ -398,15 +399,15 @@ class BotMan
                     if ($this->loadedConversation === false) {
                         $this->callMatchingMessages();
                     }
-                }
 
-                /*
-                 * If the driver has a  "messagesHandled" method, call it.
-                 * This method can be used to trigger driver methods
-                 * once the messages are handles.
-                 */
-                if (method_exists($this->getDriver(), 'messagesHandled')) {
-                    $this->getDriver()->messagesHandled();
+                    /*
+                     * If the driver has a  "messagesHandled" method, call it.
+                     * This method can be used to trigger driver methods
+                     * once the messages are handles.
+                     */
+                    if (method_exists($this->getDriver(), 'messagesHandled')) {
+                        $this->getDriver()->messagesHandled();
+                    }
                 }
 
                 $this->firedDriverEvents = false;
@@ -422,7 +423,8 @@ class BotMan
      */
     protected function callMatchingMessages()
     {
-        $matchingMessages = $this->conversationManager->getMatchingMessages($this->getMessages(), $this->middleware, $this->getConversationAnswer(), $this->getDriver());
+        $matchingMessages = $this->conversationManager->getMatchingMessages($this->getMessages(), $this->middleware,
+            $this->getConversationAnswer(), $this->getDriver());
 
         foreach ($matchingMessages as $matchingMessage) {
             $this->command = $matchingMessage->getCommand();
@@ -437,23 +439,24 @@ class BotMan
                 return $middleware instanceof Heard;
             })->toArray();
 
-            $this->message = $this->middleware->applyMiddleware('heard', $matchingMessage->getMessage(), $commandMiddleware);
+            $this->message = $this->middleware->applyMiddleware('heard', $matchingMessage->getMessage(),
+                $commandMiddleware);
 
             $parameterNames = $this->compileParameterNames($this->command->getPattern());
 
             $parameters = $matchingMessage->getMatches();
-            if (count($parameterNames) !== count($parameters)) {
+            if (\count($parameterNames) !== \count($parameters)) {
                 $parameters = array_merge(
-                    //First, all named parameters (eg. function ($a, $b, $c))
+                //First, all named parameters (eg. function ($a, $b, $c))
                     array_filter(
                         $parameters,
-                        'is_string',
+                        '\is_string',
                         ARRAY_FILTER_USE_KEY
                     ),
                     //Then, all other unsorted parameters (regex non named results)
                     array_filter(
                         $parameters,
-                        'is_integer',
+                        '\is_integer',
                         ARRAY_FILTER_USE_KEY
                     )
                 );
@@ -464,10 +467,12 @@ class BotMan
 
             $parameters = $this->conversationManager->addDataParameters($this->message, $parameters);
 
-            call_user_func_array($callback, $parameters);
+            if (call_user_func_array($callback, $parameters)) {
+                return;
+            }
         }
 
-        if (empty($matchingMessages) && empty($this->getBotMessages()) && ! is_null($this->fallbackMessage)) {
+        if (empty($matchingMessages) && empty($this->getBotMessages()) && ! \is_null($this->fallbackMessage)) {
             $this->callFallbackMessage();
         }
     }
@@ -477,11 +482,17 @@ class BotMan
      */
     protected function callFallbackMessage()
     {
-        $this->message = $this->getMessages()[0];
+        $messages = $this->getMessages();
+
+        if (! isset($messages[0])) {
+            return;
+        }
+
+        $this->message = $messages[0];
 
         $this->fallbackMessage = $this->getCallable($this->fallbackMessage);
 
-        call_user_func($this->fallbackMessage, $this);
+        \call_user_func($this->fallbackMessage, $this);
     }
 
     /**
@@ -513,11 +524,11 @@ class BotMan
 
         if ($driver instanceof DriverInterface) {
             $this->setDriver($driver);
-        } elseif (is_string($driver)) {
+        } elseif (\is_string($driver)) {
             $this->setDriver(DriverManager::loadFromName($driver, $this->config));
         }
 
-        $recipients = is_array($recipients) ? $recipients : [$recipients];
+        $recipients = \is_array($recipients) ? $recipients : [$recipients];
 
         foreach ($recipients as $recipient) {
             $this->message = new IncomingMessage('', $recipient, '');
@@ -540,8 +551,8 @@ class BotMan
      */
     public function ask($question, $next, $additionalParameters = [], $recipient = null, $driver = null)
     {
-        if (! is_null($recipient) && ! is_null($driver)) {
-            if (is_string($driver)) {
+        if (! \is_null($recipient) && ! \is_null($driver)) {
+            if (\is_string($driver)) {
                 $driver = DriverManager::loadFromName($driver, $this->config);
             }
             $this->message = new IncomingMessage('', $recipient, '');
@@ -588,9 +599,9 @@ class BotMan
         $driver = $this->getDriver();
         if (method_exists($driver, 'sendRequest')) {
             return $driver->sendRequest($endpoint, $additionalParameters, $this->message);
-        } else {
-            throw new BadMethodCallException('The driver '.$this->getDriver()->getName().' does not support low level requests.');
         }
+
+        throw new BadMethodCallException('The driver '.$this->getDriver()->getName().' does not support low level requests.');
     }
 
     /**
@@ -600,9 +611,10 @@ class BotMan
      */
     public function reply($message, $additionalParameters = [])
     {
-        $this->outgoingMessage = is_string($message) ? OutgoingMessage::create($message) : $message;
+        $this->outgoingMessage = \is_string($message) ? OutgoingMessage::create($message) : $message;
 
-        return $this->sendPayload($this->getDriver()->buildServicePayload($this->outgoingMessage, $this->message, $additionalParameters));
+        return $this->sendPayload($this->getDriver()->buildServicePayload($this->outgoingMessage, $this->message,
+            $additionalParameters));
     }
 
     /**
@@ -658,7 +670,7 @@ class BotMan
             return $callback;
         }
 
-        if (is_array($callback)) {
+        if (\is_array($callback)) {
             return $callback;
         }
 
@@ -710,7 +722,7 @@ class BotMan
             $arguments[] = $this->getMessage();
             $arguments[] = $this;
 
-            return call_user_func_array([$this->getDriver(), $name], $arguments);
+            return \call_user_func_array([$this->getDriver(), $name], $arguments);
         }
 
         throw new BadMethodCallException('Method ['.$name.'] does not exist.');
